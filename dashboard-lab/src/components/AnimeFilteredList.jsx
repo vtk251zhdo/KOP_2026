@@ -10,7 +10,7 @@ const MOCK_ANIME = [
 
 const AnimeFilteredList = () => {
   const [filter, setFilter] = useState('Всі');
-  const [expandedId, setExpandedId] = useState(null); // Стан для дрілдауну
+  const [expandedId, setExpandedId] = useState(null); 
 
   const genres = ['Всі', 'Екшен', 'Фентезі', 'Фантастика'];
 
@@ -26,7 +26,7 @@ const AnimeFilteredList = () => {
         value={filter} 
         onChange={(e) => {
           setFilter(e.target.value);
-          setExpandedId(null); // Закриваємо розгорнуті елементи при зміні фільтра
+          setExpandedId(null); 
         }}
         style={{ marginBottom: '16px', padding: '6px' }}
       >
@@ -44,7 +44,7 @@ const AnimeFilteredList = () => {
               <span>⭐ {anime.rating}</span>
             </div>
             
-            {/* Реалізація дрілдауну (умовний рендеринг) */}
+            {}
             {expandedId === anime.id && (
               <div style={{ marginTop: '8px', padding: '12px', backgroundColor: '#f9f9f9', borderRadius: '4px', fontSize: '14px' }}>
                 <p style={{ margin: '0 0 8px' }}><strong>Опис:</strong> {anime.desc}</p>

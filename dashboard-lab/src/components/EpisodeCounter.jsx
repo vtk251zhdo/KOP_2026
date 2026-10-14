@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 const EpisodeCounter = () => {
   const [episodesWatched, setEpisodesWatched] = useState(0);
-  const totalEpisodes = 24; // Захардкоджений максимум для прикладу
+  const totalEpisodes = 24; 
 
   const handleIncrement = () => {
     if (episodesWatched < totalEpisodes) setEpisodesWatched(prev => prev + 1);
