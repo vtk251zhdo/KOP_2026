@@ -1,59 +1,58 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import KpiCard from './KpiCard';
 import AnimeTable from './AnimeTable';
-
-const API_URL = 'https://kitsu.io/api/edge/anime?page[limit]=15&sort=-averageRating';
+import FilterForm from './FilterForm';
+import { useDebounce } from '../hooks/useDebounce';
+import { useFetch } from '../hooks/useFetch';
 
 const DashboardContainer = () => {
-  const [data, setData] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const defaultFilters = { search: '', status: '', sort: '-averageRating' };
+  const [filters, setFilters] = useState(defaultFilters);
 
-  useEffect(() => {
-    const fetchAnime = async () => {
-      try {
-        const response = await fetch(API_URL);
-        if (!response.ok) throw new Error(`Помилка HTTP: ${response.status}`);
-        
-        const result = await response.json();
+  const debouncedSearch = useDebounce(filters.search, 500);
 
-        const formattedData = result.data.map((item, index) => ({
-          mal_id: item.id,
-          rank: index + 1,
-          title: item.attributes.canonicalTitle,
-          type: item.attributes.showType,
-          episodes: item.attributes.episodeCount,
-          score: parseFloat(item.attributes.averageRating) || 0
-        }));
+  const apiUrl = useMemo(() => {
+    let url = `https://kitsu.io/api/edge/anime?page[limit]=15&sort=${filters.sort}`;
+    
+    if (debouncedSearch) {
+      url += `&filter[text]=${encodeURIComponent(debouncedSearch)}`;
+    }
+    if (filters.status) {
+      url += `&filter[status]=${filters.status}`;
+    }
+    
+    return url;
+  }, [debouncedSearch, filters.status, filters.sort]);
 
-        setData(formattedData);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const { data, loading, error } = useFetch(apiUrl);
 
-    fetchAnime();
-  }, []);
+  const handleReset = () => setFilters(defaultFilters);
 
-  if (isLoading) return <div style={{ padding: '20px', fontSize: '18px' }}>⏳ Завантаження бази Kitsu...</div>;
-  if (error) return <div style={{ color: 'red', padding: '20px' }}>❌ Помилка завантаження: {error}</div>;
-  if (!data || data.length === 0) return <div style={{ padding: '20px' }}>📭 Немає даних для відображення.</div>;
-
-  const topAnime = data.reduce((prev, current) => (prev.score > current.score ? prev : current));
-  const avgScore = (data.reduce((acc, anime) => acc + anime.score, 0) / data.length).toFixed(2);
-  const tvSeriesCount = data.filter(anime => anime.type === 'TV').length;
+  const topAnime = data?.length > 0 ? data.reduce((prev, current) => (prev.score > current.score ? prev : current)) : null;
+  const avgScore = data?.length > 0 ? (data.reduce((acc, anime) => acc + anime.score, 0) / data.length).toFixed(2) : 0;
+  const tvSeriesCount = data?.length > 0 ? data.filter(anime => anime.type === 'TV').length : 0;
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '24px' }}>
-        <KpiCard title="Найкраще в топі" value={topAnime.title} trend={`⭐ ${topAnime.score}`} />
-        <KpiCard title="Середній рейтинг топу" value={avgScore} trend="Live" />
-        <KpiCard title="TV Серіалів у списку" value={tvSeriesCount} trend={`З ${data.length} тайтлів`} />
-      </div>
-      
-      <AnimeTable data={data} />
+      {}
+      <FilterForm filters={filters} setFilters={setFilters} onReset={handleReset} />
+
+      {}
+      {loading && <div style={{ padding: '20px', fontSize: '18px' }}>⏳ Завантаження...</div>}
+      {error && <div style={{ color: 'red', padding: '20px' }}>❌ Помилка: {error}</div>}
+      {!loading && !error && data.length === 0 && <div style={{ padding: '20px' }}>📭 Нічого не знайдено за цими фільтрами.</div>}
+
+      {}
+      {!loading && !error && data.length > 0 && (
+        <>
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '24px' }}>
+            <KpiCard title="Найкраще у вибірці" value={topAnime?.title || '-'} trend={topAnime ? `⭐ ${topAnime.score}` : ''} />
+            <KpiCard title="Середній рейтинг" value={avgScore} trend="Live" />
+            <KpiCard title="TV Серіалів" value={tvSeriesCount} trend={`З ${data.length} тайтлів`} />
+          </div>
+          <AnimeTable data={data} />
+        </>
+      )}
     </div>
   );
 };
